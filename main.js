@@ -262,15 +262,14 @@ class FroniusWattpilot extends utils.Adapter {
         write: true,
         valueMap: ACCESS_STATE_MAP_API_TO_VAL,
       },
-      cbl: { id: "cableType", type: "number", rateLimit: true },
+      cbl: { id: "cableType", type: "number" },
       fhz: { id: "frequency", type: "number", rateLimit: true },
-      pha: { id: "phases", type: "string", rateLimit: true }, // Value is an array, store as JSON string
+      pha: { id: "phases", type: "string" }, // Value is an array, store as JSON string
       wh: { id: "energyCounterSinceStart", type: "number", rateLimit: true },
       err: {
         id: "errorState",
         type: "string",
         valueMap: ERROR_STATE_MAP,
-        rateLimit: true,
       },
       ust: {
         id: "cableLock",
@@ -280,7 +279,7 @@ class FroniusWattpilot extends utils.Adapter {
       },
       eto: { id: "energyCounterTotal", type: "number", rateLimit: true },
       cae: { id: "cae", type: "boolean", write: true }, // Charge Anywhere Enabled?
-      cak: { id: "cak", type: "string", rateLimit: true }, // Cable Auth Key?
+      cak: { id: "cak", type: "string" }, // Cable Auth Key?
       lmo: {
         id: "mode",
         type: "string",
@@ -291,9 +290,8 @@ class FroniusWattpilot extends utils.Adapter {
         id: "carConnected",
         type: "string",
         valueMap: CAR_STATE_MAP,
-        rateLimit: true,
       },
-      alw: { id: "AllowCharging", type: "boolean", rateLimit: true },
+      alw: { id: "AllowCharging", type: "boolean" },
       nrg: {
         id: "nrgData",
         type: "object",
@@ -301,17 +299,16 @@ class FroniusWattpilot extends utils.Adapter {
         customHandler: this._handleNrgData.bind(this),
       },
       amp: { id: "amp", type: "number", write: true },
-      version: { id: "version", type: "string", rateLimit: true }, // API Version?
-      fwv: { id: "firmware", type: "string", rateLimit: true },
-      wss: { id: "WifiSSID", type: "string", rateLimit: true },
+      version: { id: "version", type: "string" }, // API Version?
+      fwv: { id: "firmware", type: "string" },
+      wss: { id: "WifiSSID", type: "string" },
       upd: {
         id: "updateAvailable",
         type: "boolean",
         valueMap: { 0: false, 1: true },
-        rateLimit: true,
       },
-      fna: { id: "hostname", type: "string", rateLimit: true },
-      ffna: { id: "serial", type: "string", rateLimit: true }, // Full Friendly Name (Serial)
+      fna: { id: "hostname", type: "string" },
+      ffna: { id: "serial", type: "string" }, // Full Friendly Name (Serial)
       utc: { id: "TimeStamp", type: "string", rateLimit: true },
       pvopt_averagePGrid: {
         id: "PVUselessPower",
@@ -594,11 +591,11 @@ class FroniusWattpilot extends utils.Adapter {
       this.log.debug(`Command successful: ${JSON.stringify(message.status)}`);
       // Update corresponding 'set_...' states if needed, though usually status messages provide this
       if (message.status && message.status.amp !== undefined) {
-        this.setState("set_power", message.status.amp, true);
+        this.setStateChanged("set_power", message.status.amp, true);
       } else if (message.status && message.status.lmo !== undefined) {
-        this.setState("set_mode", message.status.lmo, true);
+        this.setStateChanged("set_mode", message.status.lmo, true);
       } else {
-        this.setState("set_state", "", true); // Clear after generic command
+        this.setStateChanged("set_state", "", true); // Clear after generic command
       }
     } else {
       this.log.error(
@@ -734,7 +731,10 @@ class FroniusWattpilot extends utils.Adapter {
     if (stateDef.customHandler) {
       await stateDef.customHandler(apiKey, apiValue, stateDef);
     } else {
-      await this.setStateAsync(stateDef.id, { val: processedValue, ack: true });
+      await this.setStateChangedAsync(stateDef.id, {
+        val: processedValue,
+        ack: true,
+      });
     }
 
     if (stateDef.rateLimit) {
@@ -777,7 +777,7 @@ class FroniusWattpilot extends utils.Adapter {
           ); // Assuming nrg states are read-only
           this.createdStatesRegistry.add(fullStateId); // Use a unique key for registry
         }
-        await this.setStateAsync(nrgState.id, {
+        await this.setStateChangedAsync(nrgState.id, {
           val: nrgState.value,
           ack: true,
         });
@@ -826,7 +826,7 @@ class FroniusWattpilot extends utils.Adapter {
       this.createdStatesRegistry.add(apiKey);
     }
 
-    await this.setStateAsync(apiKey, { val: valueToSet, ack: true });
+    await this.setStateChangedAsync(apiKey, { val: valueToSet, ack: true });
     if (isCustomViaConfig) {
       this._updateRateLimitTimestamp(apiKey);
     }
